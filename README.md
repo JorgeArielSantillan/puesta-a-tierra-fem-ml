@@ -48,4 +48,4 @@ Gmsh · Elmer FEM · Python (NumPy, SciPy, scikit-learn, Matplotlib) · PowerShe
 
 El código es privado y está **disponible a pedido** para procesos de selección.
 
-Contacto: [TU EMAIL] · [TU LINKEDIN]
+Contacto: georgesantillan1617@gmail.com · https://www.linkedin.com/in/jorge-ariel-santill%C3%A1n-235593183/
