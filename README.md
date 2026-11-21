@@ -13,7 +13,7 @@ Una jabalina de puesta a tierra tiene que tener una resistencia baja para que, a
 1. **Simulación por elementos finitos** del problema axisimétrico con herramientas libres: geometría y malla paramétricas en **Gmsh** (punta semiesférica, refinamiento en la jabalina, la punta y la interfaz) y solución en **Elmer FEM**.
 2. **Validación** contra un motor analítico propio (método de los momentos con la función de Green de dos capas de Sunde): diferencia menor al 0,5 %.
 3. **Estudio de convergencia de malla por energía:** la potencia disipada P = V²/R se calcula para mallas cada vez más finas; con 2 mm en las zonas críticas el error estimado es 0,08 % y el tiempo por caso no aumenta.
-4. **Barrido automático de 600 casos** (Python controla Gmsh + Elmer, en paralelo, con reanudación y control de errores).
+4. **Barrido automático de 600 casos** (Python controla Gmsh + Elmer, en paralelo, con reanudación y control de errores), más **150 casos elegidos por el propio modelo** con aprendizaje activo.
 5. **Surrogate:** la fórmula de ingeniería más una corrección aprendida por un ensamble de redes neuronales. Predice R en milisegundos en lugar de segundos por simulación.
 
 ![Resistencia en función de la profundidad y campo en tres etapas](docs/resumen_vitrina.png)
@@ -24,11 +24,11 @@ Una jabalina de puesta a tierra tiene que tener una resistencia baja para que, a
 |---|---|---|
 | Dwight con suelo uniforme | > 100 % | > 1000 % |
 | Dwight con resistividad equivalente | 9,9 % | 44 % |
-| **Fórmula + corrección con ensamble de redes** | **0,48 %** | **3,3 %** |
+| **Fórmula + corrección con ensamble de redes** | **0,45 %** | **3,2 %** |
 
-*Conjunto de test: 120 simulaciones de Elmer que el modelo no vio durante el entrenamiento (80 % / 20 % de 600 casos).*
+*Conjunto de test: 120 simulaciones de Elmer que el modelo no vio durante el entrenamiento, fijas desde el principio (20 % de los 600 casos originales). El modelo se entrenó con los otros 630: 480 originales + 150 de aprendizaje activo.*
 
-![R predicha contra R de Elmer en el test: Dwight con ρ equivalente y el surrogate](docs/paridad_test.png)
+![R predicha contra R de Elmer en el test: Dwight con ρ equivalente y el surrogate (modelo de 600 casos)](docs/paridad_test.png)
 
 ### Validación con 10 jabalinas nuevas
 
@@ -38,10 +38,11 @@ Para probar el modelo fuera del test, se simularon en Gmsh + Elmer 10 jabalinas 
 |---|---|---|
 | Dwight con resistividad equivalente | 12,3 % | 37,8 % |
 | Surrogate (500 casos) | 1,10 % | 7,5 % |
-| **Surrogate (600 casos)** | **0,82 %** | **3,3 %** |
+| Surrogate (600 casos) | 0,82 % | 3,3 % |
+| **Surrogate (750 casos, con aprendizaje activo)** | **0,57 %** | **1,8 %** |
 | Método de los momentos (control de Elmer) | 0,33 % | 0,41 % |
 
-**Aprendizaje activo:** la primera validación encontró el punto débil del modelo. Una jabalina de 3 m con la napa a 2,9 m (solo los últimos 10 cm en la capa conductora) daba 7,5 % de error: ahí la corriente se concentra en la punta y R cae bruscamente, y el dataset tenía pocos casos con h/L ≈ 1. Se agregaron 100 simulaciones con h/L entre 0,85 y 1,1, se reentrenó y el error bajó a 3,3 %, sin cambiar nada más.
+**Aprendizaje activo:** la primera validación encontró el punto débil del modelo. Una jabalina de 3 m con la napa a 2,9 m (solo los últimos 10 cm en la capa conductora) daba 7,5 % de error: ahí la corriente se concentra en la punta y R cae bruscamente, y el dataset tenía pocos casos con h/L ≈ 1. Se agregaron 100 simulaciones con h/L entre 0,85 y 1,1, se reentrenó y el error bajó a 3,3 %, sin cambiar nada más. Después el aprendizaje activo automático (ver más abajo) lo llevó a 1,8 %.
 
 ![Validación con 10 jabalinas nuevas](docs/validacion_10_jabalinas.png)
 
@@ -60,12 +61,32 @@ Al principio los datos rinden mucho: de 60 a 240 casos el error se reduce a meno
 
 ![Curva de aprendizaje del surrogate](docs/curva_aprendizaje.png)
 
+### Aprendizaje activo: el modelo elige qué simular
+
+En vez de sumar casos al azar, el modelo decide qué le falta. En cada ronda:
+
+1. Genera 20 000 candidatos y los evalúa con las 5 redes del ensamble (0,2 s).
+2. Mide cuánto discrepan las redes entre sí en cada candidato: donde discrepan, el modelo duda.
+3. Manda a Elmer solo los 50 candidatos con más desacuerdo (unos 40 s) y se reentrena.
+
+Para medir zonas que el test de 120 casos no llega a cubrir, se agregó un test grande de 1000 casos repartidos por todo el rango, resuelto con el método de los momentos (difiere de Elmer en unos 0,3 %, suficiente para detectar errores grandes). Ese test encontró un punto débil oculto: **17,7 % de error** con la punta apenas dentro de una capa unas 18 veces más conductora.
+
+| | Inicial | Ronda 1 | Ronda 2 | Ronda 3 |
+|---|---|---|---|---|
+| Casos de entrenamiento | 480 | 530 | 580 | 630 |
+| Test de 120: error medio | 0,51 % | 0,48 % | 0,50 % | **0,45 %** |
+| Test grande (1000): peor caso | 17,7 % | 13,5 % | 13,2 % | **9,4 %** |
+
+Con 150 simulaciones, el peor caso del test grande bajó casi a la mitad. En un ensayo previo (con el método de los momentos como referencia en todo), 150 casos al azar no lo mejoraban: el peor caso quedaba en 17 %. El gráfico de la derecha muestra dónde pidió simulaciones el modelo: en los bordes del rango y cerca de la interfaz, justo donde el dataset original tenía menos información.
+
+![Aprendizaje activo: error por ronda y casos elegidos](docs/aprendizaje_activo.png)
+
 ![Estudio de convergencia de malla por energía](docs/convergencia_elmer.png)
 
 ## Decisiones técnicas
 
 - **Análisis dimensional:** R·L/ρ₁ depende solo de L/a, h/L y ρ₂/ρ₁. El modelo aprende en esas variables y generaliza a cualquier escala.
-- **Física + datos:** la red no aprende R desde cero, sino la corrección sobre la fórmula de ingeniería. Así el error medio baja de 9,9 % a 0,48 %.
+- **Física + datos:** la red no aprende R desde cero, sino la corrección sobre la fórmula de ingeniería. Así el error medio baja de 9,9 % a 0,45 %.
 - **Punta semiesférica:** con punta plana, la densidad de corriente en la punta crece sin límite al refinar la malla (singularidad de esquina); con punta curva converge.
 
   ![Punta plana contra punta semiesférica](docs/punta_plana_vs_curva.png)
