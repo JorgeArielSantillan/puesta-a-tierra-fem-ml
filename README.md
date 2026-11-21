@@ -87,6 +87,27 @@ Con 150 simulaciones, el peor caso del test grande bajó casi a la mitad. En un 
 
 ![Estudio de convergencia de malla por energía](docs/convergencia_elmer.png)
 
+### Comparación con mediciones de campo
+
+Las simulaciones validan el modelo contra la física, pero la prueba final es la realidad. En la literatura hay pocas mediciones publicadas con todos los datos que necesita el modelo (jabalina, espesor de la capa y las dos resistividades). Estas son las dos que se encontraron.
+
+**Caso 1: jabalina de 2 m medida en campo [1].** Diámetro 16 mm; suelo de dos capas obtenido por el método de Wenner: ρ₁ = 1734 Ω·m arriba, ρ₂ = 94,5 Ω·m abajo, interfaz a 1,5 m. Está dentro del rango del modelo.
+
+| Método | R | Diferencia con la medición |
+|---|---|---|
+| **Medición de campo [1]** | **108 Ω** | — |
+| Elementos finitos de los autores [1] | 113 Ω | +4,6 % |
+| **Surrogate de este proyecto** | **118,9 Ω** | **+10 %** |
+| Método de los momentos (control independiente) | 120,0 Ω | +11 % |
+| Dwight con resistividad equivalente | 152,7 Ω | +41 % |
+| Dwight con suelo uniforme ρ₁ | 815 Ω | 7,5 veces más |
+
+El surrogate coincide con el método de los momentos en menos de 1 %: reproduce bien la física. La diferencia de alrededor de 10 % con la medición viene sobre todo de los datos del suelo y no del modelo. En [1], ρ₁ sale de una sola lectura de Wenner, la profundidad de la interfaz está redondeada (1,53 m → 1,5 m) y el ρ₂ informado no coincide con el promedio de su propia tabla (96,25 Ω·m). Con datos de suelo así, ningún cálculo puede bajar de ±10 %. Las fórmulas clásicas, en cambio, fallan por 41 % y por un factor de 7,5.
+
+**Caso 2: jabalina clavada a 9 profundidades en una subestación [2].** Mediciones de 2 a 7,8 m en un suelo de 3500 Ω·m sobre 35 Ω·m, con la interfaz a 2,7 m. No es una prueba limpia, por tres motivos: el contraste (ρ₂/ρ₁ = 0,01) está cinco veces fuera del rango de entrenamiento, el artículo no informa el diámetro de la jabalina y el modelo del suelo se ajustó a partir de esas mismas mediciones. Aun así, suponiendo 16 mm de diámetro, desde 5,4 m de profundidad el surrogate queda entre 0 % y 9 % de la medición (por ejemplo, 7,2 Ω contra 6,6 Ω medidos a 7,8 m).
+
+**Conclusión:** en un proyecto real, la incertidumbre de la medición del suelo (típicamente 10 a 30 %) pesa mucho más que el error del modelo (0,5 %). El surrogate sirve para reemplazar a las fórmulas simplificadas, no a la medición del suelo ni a la de la puesta a tierra terminada.
+
 ## Decisiones técnicas
 
 - **Análisis dimensional:** R·L/ρ₁ depende solo de L/a, h/L y ρ₂/ρ₁. El modelo aprende en esas variables y generaliza a cualquier escala.
@@ -100,6 +121,12 @@ Con 150 simulaciones, el peor caso del test grande bajó casi a la mitad. En un 
 ## Tecnologías
 
 Gmsh · Elmer FEM · Python (NumPy, SciPy, scikit-learn, Matplotlib) · PowerShell
+
+## Bibliografía
+
+[1] A. Martins, S. Mariano y M. R. Calado, "The IEEE Model for a Ground Rod in a Two Layer Soil – A FEM Approach", en *Finite Element Analysis – New Trends and Developments*, F. Ebrahimi (ed.), IntechOpen, 2012, sección 5 "Field measurements". DOI: [10.5772/48252](https://doi.org/10.5772/48252)
+
+[2] M. Andrade, "Una nueva manera de interpretar el método de tres puntos para el modelado del terreno en dos capas horizontales", *Memoria Investigaciones en Ingeniería*, núm. 23, pp. 88-105, 2022, sección 2.3, ejemplo 1, tabla I. DOI: [10.36561/ING.23.8](https://doi.org/10.36561/ING.23.8)
 
 ## Código fuente
 
