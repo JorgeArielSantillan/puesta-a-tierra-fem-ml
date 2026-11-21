@@ -45,6 +45,21 @@ Para probar el modelo fuera del test, se simularon en Gmsh + Elmer 10 jabalinas 
 
 ![Validación con 10 jabalinas nuevas](docs/validacion_10_jabalinas.png)
 
+### ¿Hacen falta más simulaciones?
+
+Para decidirlo con datos, se entrenó el mismo ensamble con 60, 120, 240, 360 y 480 casos y se midió siempre contra el mismo test de 120 simulaciones.
+
+| Casos de entrenamiento | Error medio | Peor caso |
+|---|---|---|
+| 60 | 1,34 % | 9,6 % |
+| 120 | 0,73 % | 6,3 % |
+| 240 | 0,61 % | 3,7 % |
+| 480 | 0,49 % | 3,3 % |
+
+Al principio los datos rinden mucho: de 60 a 240 casos el error se reduce a menos de la mitad. Después cada duplicación lo baja solo un 20 % (el error cae como n^−0,31). Con 1000 simulaciones el error medio quedaría cerca de 0,42 %, ya dentro de la precisión de la propia simulación (malla 0,08 %; Elmer contra el método de los momentos, menos de 0,4 %). Conclusión: más casos al azar no mejoran el modelo de forma apreciable. Las simulaciones nuevas conviene ubicarlas donde el modelo duda, como se hizo con la jabalina 4.
+
+![Curva de aprendizaje del surrogate](docs/curva_aprendizaje.png)
+
 ![Estudio de convergencia de malla por energía](docs/convergencia_elmer.png)
 
 ## Decisiones técnicas
