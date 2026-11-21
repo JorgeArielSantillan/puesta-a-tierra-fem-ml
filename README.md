@@ -2,6 +2,10 @@
 
 **Autor:** Jorge Ariel Santillán
 
+### [▶ Calcular una jabalina en la web](https://puesta-a-tierra.vercel.app)
+
+Ingresá el largo, el diámetro, la profundidad de la napa y las resistividades: el surrogate da R al instante, la compara con Dwight y con las simulaciones de Elmer, y calcula el largo necesario para una R objetivo.
+
 ![La jabalina se clava y la resistencia cae al llegar a la capa húmeda](docs/jabalina_clavandose.gif)
 
 ## El problema
