@@ -28,6 +28,8 @@ Una jabalina de puesta a tierra tiene que tener una resistencia baja para que, a
 
 *Conjunto de test: 120 simulaciones de Elmer que el modelo no vio durante el entrenamiento (80 % / 20 % de 600 casos).*
 
+![R predicha contra R de Elmer en el test: Dwight con ρ equivalente y el surrogate](docs/paridad_test.png)
+
 ### Validación con 10 jabalinas nuevas
 
 Para probar el modelo fuera del test, se simularon en Gmsh + Elmer 10 jabalinas con geometrías y suelos realistas: diámetros comerciales de 1/2" a 3/4", largos de 1,5 a 6 m y ρ₁ entre 30 y 1000 Ω·m. El modelo se entrenó solo con a = 8 mm y ρ₁ = 100 Ω·m, así que estos casos prueban que las variables adimensionales generalizan.
